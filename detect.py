@@ -32,6 +32,11 @@ import sys
 from pathlib import Path
 
 import torch
+import rasterio as rio
+from rasterio.crs import CRS
+from rasterio import warp
+from shapely.geometry import Polygon
+import geopandas as gpd
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -61,6 +66,7 @@ def run(
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
         save_crop=False,  # save cropped prediction boxes
+        save_geojson=False, # save prediction boxes as geojson
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
@@ -108,6 +114,9 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+
+    detects = []
+
     for path, im, im0s, vid_cap, s in dataset:
         with dt[0]:
             im = torch.from_numpy(im).to(device)
@@ -144,7 +153,9 @@ def run(
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+
             if len(det):
+
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
 
@@ -153,8 +164,16 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
+                rimg = rio.open(path)
+
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
+                    if save_geojson: # Write to GeoJSON file
+                        xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
+                        xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
+                        detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
+                        detects.append(detect_bbox)
+
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
@@ -200,6 +219,10 @@ def run(
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
+    if save_geojson:
+        with open(f'{save_dir}/detects.geojson', 'w') as f:
+            f.write(gpd.GeoSeries(detects).to_json())
+
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
@@ -209,6 +232,9 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
+def pixel_to_lat_lon(img, x, y):
+    px, py = rio.transform.xy(img.transform, x, y)
+    return warp.transform(img.crs, CRS.from_epsg(4326), px, py)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
@@ -224,6 +250,7 @@ def parse_opt():
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
+    parser.add_argument('--save-geojson', action='store_true', help='save prediction boxes as geojson')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
