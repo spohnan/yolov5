@@ -37,6 +37,9 @@ from rasterio.crs import CRS
 from rasterio import warp
 from shapely.geometry import Polygon
 import geopandas as gpd
+from itertools import product
+import rasterio as rio
+from rasterio import windows
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -88,12 +91,17 @@ def run(
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
     webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
-    if is_url and is_file:
-        source = check_file(source)  # download
+
+    # if is_url and is_file:
+    #     source = check_file(source)  # download
 
     # Directories
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+
+    if is_url:
+        torch.hub.download_url_to_file(source, os.path.join(save_dir, Path(source).name))
+        source = chip_image(source, save_dir)
 
     # Load model
     device = select_device(device)
@@ -235,6 +243,29 @@ def run(
 def pixel_to_lat_lon(img, x, y):
     px, py = rio.transform.xy(img.transform, x, y)
     return warp.transform(img.crs, CRS.from_epsg(4326), px, py)
+
+def get_tiles(ds, width=2048, height=2048):
+    nols, nrows = ds.meta['width'], ds.meta['height']
+    offsets = product(range(0, nols, width), range(0, nrows, height))
+    big_window = windows.Window(col_off=0, row_off=0, width=nols, height=nrows)
+    for col_off, row_off in  offsets:
+        window = windows.Window(col_off=col_off, row_off=row_off, width=width, height=height).intersection(big_window)
+        transform = windows.transform(window, ds.transform)
+        yield window, transform
+
+def chip_image(source, save_dir):
+    with rio.open(source) as inds:
+        meta = inds.meta.copy()
+        dir = os.path.join(save_dir, 'chips')
+        Path(dir).mkdir()
+        for window, transform in get_tiles(inds):
+            print(window)
+            meta['transform'] = transform
+            meta['width'], meta['height'] = window.width, window.height    
+            outpath = os.path.join(dir, 'tile_{}-{}.tif'.format(int(window.col_off), int(window.row_off)))
+            with rio.open(outpath, 'w', **meta) as outds:
+                outds.write(inds.read(window=window))
+    return dir
 
 def parse_opt():
     parser = argparse.ArgumentParser()
