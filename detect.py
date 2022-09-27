@@ -40,6 +40,8 @@ import geopandas as gpd
 from itertools import product
 import rasterio as rio
 from rasterio import windows
+from colorthief import ColorThief
+from math import sqrt
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -100,7 +102,7 @@ def run(
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     if is_url:
-        torch.hub.download_url_to_file(source, os.path.join(save_dir, Path(source).name))
+        # torch.hub.download_url_to_file(source, os.path.join(save_dir, Path(source).name))
         source = chip_image(source, save_dir)
 
     # Load model
@@ -176,12 +178,7 @@ def run(
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
-                    if save_geojson: # Write to GeoJSON file
-                        xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
-                        xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
-                        detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
-                        detects.append(detect_bbox)
-
+                    
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
@@ -192,8 +189,17 @@ def run(
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                    if save_geojson: # Write to GeoJSON file
+                        xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
+                        xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
+                        detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
+                        color_thief = ColorThief(save_dir / 'crops' / names[c] / f'{p.stem}.jpg')
+                        c = color_thief.get_color(quality=1)
+                        detects.append({'c': closest_color(c[0], c[1], c[2]), 'geometry': detect_bbox})
 
             # Stream results
             im0 = annotator.result()
@@ -229,7 +235,7 @@ def run(
 
     if save_geojson:
         with open(f'{save_dir}/detects.geojson', 'w') as f:
-            f.write(gpd.GeoSeries(detects).to_json())
+            f.write(gpd.GeoDataFrame(detects).to_json())
 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
@@ -239,6 +245,27 @@ def run(
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+
+COLORS = (
+    (255,255,255,'white'),
+    (255,255,0,'yellow'),
+    (255,165,0,'orange'),
+    (255,0,0,'red'),
+    (0,128,0,'green'),
+    (0,0,255,'blue'),
+    (128,128,128,'gray'),
+    (165,42,42,'brown'),
+    (128,0,128,'purple'),
+    (0,0,0,'black'),
+)
+
+def closest_color(r,g,b):
+    color_diffs = []
+    for color in COLORS:
+        cr, cg, cb, cn = color
+        color_diff = sqrt(abs(r - cr)**2 + abs(g - cg)**2 + abs(b - cb)**2)
+        color_diffs.append((color_diff, color))
+    return min(color_diffs)[1][3]
 
 def pixel_to_lat_lon(img, x, y):
     px, py = rio.transform.xy(img.transform, x, y)

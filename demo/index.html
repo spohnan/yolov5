@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta content="utf-8" http-equiv="encoding">
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@1.14.0-rc.1/dist/maplibre-gl.css" type="text/css" />
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+
+    <nav class=" navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-1 h1">Vehicle Detection</span>
+            <form>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="select-dataset" class="col-sm-4 col-form-label" style="color: white;">Collection:</label>
+                    </div>
+                    <div class="col">
+                        <select id="select-dataset" class="form-select form-select-sm">
+                            <option value="lviv" selected>Lviv Ukraine</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </nav>
+
+    <div id="map">
+        <div id="left" class="sidebar flex-center left collapsed">
+            <div class="sidebar-content rounded-rect flex-center">
+                <div class="sidebar-content-wrapper">
+                    <h5 class="sidebar-header text-center">Search Results</h5>
+                    <div id="sidebar-info" class="sidebar-info"></div>
+                    <div class="sidebar-list-wrapper">
+                        <div id="sidebar-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="sentinal2-search-form" tabindex="-1" aria-labelledby="sentinal2-search-form-title" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sentinal2-search-form-title">Sentinal 2 Search Filters</h5>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="img-acq-start" class="formlabel">Start Date:</label>
+                                <input type="date" class="form-control" id="img-acq-start" name="img-acq-start" />
+                            </div>
+                            <div class="col">
+                                <label for="img-acq-end" class="formlabel">End Date:</label>
+                                <input type="date" class="form-control" id="img-acq-end" name="img-acq-end" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="max-clouds" id="max-clouds-label" class="formlabel">Max Clouds: 5%</label>
+                                <input type="range" class="form-control" id="max-clouds" name="max-clouds" value="5" min="0" max="100" />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Update&nbsp;Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="spacenet-search-form" tabindex="-1" aria-labelledby="spacenet-search-form-title" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sentinal2-search-form-title">SpaceNet Search Filters</h5>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="spacenet-storage-class" class="formlabel">Storage Class</label>
+                                <div class="form-check">
+                                    <input checked class="form-check-input" type="checkbox" name="spacenet-storage" value="STANDARD" id="spacenet-storage-standard">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Standard</label>
+                                </div>
+                                <div class="form-check">
+                                    <input checked class="form-check-input" type="checkbox" name="spacenet-storage" value="INTELLIGENT_TIERING" id="spacenet-storage-intelligent-tiering">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Intelligent Tiering</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="spacenet-storage" value="STANDARD_IA" id="spacenet-storage-standard-ia">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Standard Infrequent Access</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="spacenet-storage" value="GLACIER" id="spacenet-storage-glacier">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Glacier</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="spacenet-storage" value="DEEP_ARCHIVE" id="spacenet-storage-glacier-deep-archive">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Glacier Deep Archive</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="spacenet-storage" value="OUTPOSTS" id="spacenet-storage-outposts">
+                                    <label class="form-check-label" for="spacenet-storage-standard">Outposts</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Update&nbsp;Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="search-info" type="text/x-handlebars-template">
+        <div class="modal fade" id="itemsInfo" tabindex="-1" aria-labelledby="itemsInfoTitle" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="itemsInfoTitle">Search Info</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card">
+                            <div class="card-header">Search Terms</div>
+                            <div class="card-text"><pre>{{stringify search}}</pre></div>
+                        </div>
+                        <br/>
+                        <div class="card">
+                            <div class="card-header">STAC Response</div>
+                            <div class="card-text"><pre>{{stringify response}}</pre></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+    <div id="search-info-content"></div>
+
+    <script id="items-info" type="text/x-handlebars-template">
+        Results: {{response.context.matched}} &nbsp;
+        <a href="#" data-bs-toggle="modal" data-bs-target="#itemsInfo">
+            <span class="badge rounded-pill bg-primary">search info</span>
+        </a>
+    </script>
+
+    <script id="items-list" type="text/x-handlebars-template">
+        <li class="list-group-item d-flex justify-content-between align-items-start" id="listing-{{id}}">
+            {{#if assets.thumbnail.href}}
+            <a target="_blank" href="{{assets.thumbnail.href}}">
+                <img class="img-thumb" src="{{assets.thumbnail.href}}" />
+            </a>
+            {{/if}}
+            <div class="ms-2 me-auto">
+                <div class="fw-bold">{{id}}</div>
+                <small>
+                    Collection Date: {{dateFormat properties.datetime}}
+                    {{#if properties.eo:cloud_cover}}
+                        <br />Cloud Cover: {{properties.eo:cloud_cover}}%
+                    {{/if}}
+                    {{#if properties.storage:tier}}
+                        <br />Storage Tier: <span class="{{storageTier properties.storage:tier}}">{{properties.storage:tier}}</span>   
+                    {{/if}}
+                </small>
+            </div>
+        </li>
+    </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js" integrity="sha512-RNLkV3d+aLtfcpEyFG8jRbnWHxUqVZozacROI4J2F1sTaDqo1dPQYs01OMi1t1w9Y2FdbSCDSQ2ZVdAC8bzgAg==" crossorigin=" anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/maplibre-gl@1.14.0-rc.1/dist/maplibre-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.js"></script>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.784.0.min.js"></script>
+<script src="https://unpkg.com/@aws-amplify/core@3.7.0/dist/aws-amplify-core.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

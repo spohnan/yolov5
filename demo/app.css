@@ -1,0 +1,92 @@
+body {
+    margin: 0;
+}
+
+#map {
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    top: 58px;
+    bottom: 0;
+}
+
+.rounded-rect {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 0 50px -25px black;
+}
+
+.flex-center {
+    position: absolute;
+    display: flex;
+}
+
+.flex-center.left {
+    left: 45px;
+}
+
+.sidebar-content {
+    height: 97%;
+    margin: 9px 0 9px 0;
+    position: absolute;
+    font-family: Arial, Helvetica, sans-serif;
+    color: gray;
+}
+
+.sidebar {
+    transition: transform 1s;
+    z-index: 1;
+    width: 300px;
+    height: 100%;
+}
+
+.sidebar-list-wrapper {
+    height: 91%;
+    max-width: 290px;
+    overflow-y: scroll;
+}
+
+.left.collapsed {
+    transform: translateX(-335px);
+}
+
+#sidebar-list {
+    height: 99%;
+    width: 100%;
+    font-size: 13px;
+    overflow-x: hidden;
+}
+
+.sidebar-header {
+    padding: 5px 0 5px 0;
+    width: 290px;
+    background-color: #000;
+    color: #fff;
+    border-radius: 4px 4px 0 0;
+    margin: 0;
+}
+
+.list-group-item {
+    padding: .1rem;
+}
+
+.sidebar-info {
+    display: inline-block;
+    padding-left: 10px;
+}
+
+pre {
+    font-size: small;
+}
+
+.img-thumb {
+    max-width: 50px;
+}
+
+#select-dataset {
+    width: 200px;
+}
+
+.navbar {
+    padding: 0;
+}
