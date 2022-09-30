@@ -279,8 +279,8 @@ def closest_color(r,g,b):
     return min(color_diffs)[1][3]
 
 def pixel_to_lat_lon(img, x, y):
-    px, py = rio.transform.xy(img.transform, x, y)
-    return warp.transform(img.crs, CRS.from_epsg(4326), px, py)
+    px, py = rio.transform.xy(img.transform, int(x), int(y))
+    return warp.transform(img.crs, CRS.from_epsg(4326), [px], [py])
 
 def get_tiles(ds, width=2048, height=2048):
     nols, nrows = ds.meta['width'], ds.meta['height']

@@ -1,0 +1,7 @@
+#!/bin/bash
+sudo -i
+mkdir -p runs 
+mkfs.xfs /dev/nvme1n1
+mount -t xfs /dev/nvme1n1 $(pwd)/runs
+curl -O https://d1e0wfdqraggj5.cloudfront.net/cars.pt
+chown ec2-user.ec2-user runs cars.pt
