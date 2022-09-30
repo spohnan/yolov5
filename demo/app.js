@@ -16,6 +16,12 @@ const datasets = {
         maxZoom: 21,
         tiles: ['https://tiles.openaerialmap.org/6066cd43d8a0ef00061b9506/0/6066cd43d8a0ef00061b9507/{z}/{x}/{y}']
     },
+    basra: {
+        center: [47.435, 31.010],
+        zoom: 15,
+        maxZoom: 21,
+        tiles: ['https://tiles.openaerialmap.org/60c44318338cc80005cfdd06/0/60c44318338cc80005cfdd07/{z}/{x}/{y}']
+    },
     winchelsea: {
         center: [0.708, 50.924],
         zoom: 17,
