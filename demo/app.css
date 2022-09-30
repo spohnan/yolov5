@@ -10,6 +10,13 @@ body {
     bottom: 0;
 }
 
+.detect-stats {
+    background: white;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: small;
+}
+
 .rounded-rect {
     background: white;
     border-radius: 4px;

@@ -65,9 +65,13 @@ function refreshMap() {
         'layout': {},
         'paint': {
             'line-color': [
-                'case',
-                ["has", "co"], ["get", "co"],
-                '#ff0000'
+                'case', 
+                    ['==', ["get", "cl"], 3], '#ff0000', // car (red)
+                    ['==', ["get", "cl"], 4], '#00ff00', // van (green)
+                    ['==', ["get", "cl"], 5], '#0000ff', // truck (blue)
+                    ['==', ["get", "cl"], 8], '#ff5733', // bus (orange)
+                    ['==', ["get", "cl"], 8], '#c133ff', // motor (purple)
+                '#ff0000', // other (red)
             ],
             'line-width': 2
         }
@@ -90,13 +94,13 @@ async function initializeMap() {
     map.addControl(new maplibregl.FullscreenControl());
     drawLayer = new MapboxDraw({
         displayControlsDefault: false,
-        controls: {
-            polygon: true,
-            trash: true
-        }
     });
     map.on('load', function() {
         refreshMap();
+    });
+    map.on('idle', function() {
+        let features = map.queryRenderedFeatures({layers: ['bboxes']})
+        byId('detects-panel').innerHTML = 'Visible Detects: ' + features.length;
     });
 }
 
