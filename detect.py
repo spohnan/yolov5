@@ -197,7 +197,8 @@ def run(
                         xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
                         xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
                         detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
-                        detects.append({'cl': c,'co': get_color(crop), 'geometry': detect_bbox})
+                        # detects.append({'cl': c,'co': get_color(crop), 'geometry': detect_bbox})
+                        detects.append({'cl': c, 'geometry': detect_bbox})
 
             # Stream results
             im0 = annotator.result()
