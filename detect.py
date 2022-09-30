@@ -40,8 +40,8 @@ import geopandas as gpd
 from itertools import product
 import rasterio as rio
 from rasterio import windows
-from colorthief import ColorThief
 from math import sqrt
+from random import sample
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -191,15 +191,13 @@ def run(
                         annotator.box_label(xyxy, label, color=colors(c, True))
 
                     if save_crop:
-                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
                     if save_geojson: # Write to GeoJSON file
                         xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
                         xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
                         detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
-                        color_thief = ColorThief(save_dir / 'crops' / names[c] / f'{p.stem}.jpg')
-                        c = color_thief.get_color(quality=1)
-                        detects.append({'c': closest_color(c[0], c[1], c[2]), 'geometry': detect_bbox})
+                        detects.append({'cl': c,'co': get_color(crop), 'geometry': detect_bbox})
 
             # Stream results
             im0 = annotator.result()
@@ -258,6 +256,19 @@ COLORS = (
     (128,0,128,'purple'),
     (0,0,0,'black'),
 )
+
+# Just grabbing a few points and returning the most common
+def get_color(img):
+    colors = {}
+    height = img.shape[0]
+    width= img.shape[1]
+    for x in range(0, 8):
+        c = img[int((height / 3) +  (x * 3)), int((width / 3) + (x * 3))]
+        key = closest_color(c[2], c[1], c[0])
+        colors[key] = colors.get(key, 0) + 1
+    
+    print(f"returning: {max(colors, key=colors.get)}")
+    return max(colors, key=colors.get)
 
 def closest_color(r,g,b):
     color_diffs = []

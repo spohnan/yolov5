@@ -11,27 +11,46 @@ const byId = document.getElementById.bind(document);
 
 const datasets = {
     lviv: {
-        center: [24.02, 49.84],
-        zoom: 14,
-        maxZoom: 25,
+        center: [24.012, 49.811],
+        zoom: 15,
+        maxZoom: 21,
+        tiles: ['https://tiles.openaerialmap.org/6066cd43d8a0ef00061b9506/0/6066cd43d8a0ef00061b9507/{z}/{x}/{y}']
+    },
+    winchelsea: {
+        center: [0.708, 50.924],
+        zoom: 17,
+        maxZoom: 21,
+        tiles: ['https://tiles.openaerialmap.org/632b17e89ee90900078a716d/0/632b17e89ee90900078a716e/{z}/{x}/{y}']
     }
 };
 
-function loadMap() {
-    map.addSource('source-tms-1', {
+let params = new URLSearchParams(window.location.search);
+if(params.get('ds')) { 
+    ds = datasets[params.get('ds')];
+    byId("select-dataset").value = params.get('ds');
+} else {
+    ds = datasets[Object.keys(datasets)[0]]; 
+}
+
+function refreshMap() {
+    if(map.getLayer('base')) { map.removeLayer('base'); }
+    if(map.getLayer('bboxes')) { map.removeLayer('bboxes'); }
+    if(map.getSource('base-tiles')) { map.removeSource('base-tiles'); }
+    if(map.getSource('detects-bboxes')) { map.removeSource('detects-bboxes'); }
+
+    map.addSource('base-tiles', {
         'type': 'raster',
-        'tiles': [ 'https://tiles.openaerialmap.org/6066cd43d8a0ef00061b9506/0/6066cd43d8a0ef00061b9507/{z}/{x}/{y}' ],
+        'tiles': ds.tiles,
         'tileSize': 256
     });
     map.addLayer({
-        'id': 'source-tms',
+        'id': 'base',
         'type': 'raster',
-        'source': 'source-tms-1'
-    }, '');
-
+        'source': 'base-tiles'
+    });
     map.addSource('detects-bboxes', {
         'type': 'geojson',
-        'data': './detects.geojson'
+        'data': './' + byId("select-dataset").value + '-detects.geojson'
     });
     map.addLayer({
         'id': 'bboxes',
@@ -39,7 +58,11 @@ function loadMap() {
         'source': 'detects-bboxes',
         'layout': {},
         'paint': {
-            'line-color': '#ff0000',
+            'line-color': [
+                'case',
+                ["has", "co"], ["get", "co"],
+                '#ff0000'
+            ],
             'line-width': 2
         }
     });
@@ -49,10 +72,10 @@ async function initializeMap() {
     await credentials.getPromise();
     map = new maplibregl.Map({
         container: "map",
-        center: [24.012, 49.811],
-        maxZoom: 20,
-        minZoom: 1,
-        zoom: 13,
+        center: ds.center,
+        maxZoom: ds.maxZoom,
+        minZoom: 2,
+        zoom: ds.zoom,
         style: mapName,
         transformRequest,
     });
@@ -67,10 +90,19 @@ async function initializeMap() {
         }
     });
     map.on('load', function() {
-        map.boxZoom.enable();
-        loadMap();
+        refreshMap();
     });
 }
+
+byId("select-dataset").onchange = function() {
+    ds = datasets[byId("select-dataset").value];
+    map.setMaxZoom(ds.maxZoom);
+    refreshMap();
+    map.jumpTo({
+        center: ds.center,
+        zoom: ds.zoom,
+    });
+};
 
 function transformRequest(url, resourceType) {
     if (resourceType === "Style" && !url.includes("://")) {
