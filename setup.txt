@@ -12,7 +12,7 @@ python detect.py \
     --weights cars.pt \
     --classes 3 4 5 8 9 \
     --conf-thres 0.40 \
-    --source https://oin-hotosm.s3.amazonaws.com/60c44318338cc80005cfdd06/0/60c44318338cc80005cfdd07.tif \
+    --source https://oin-hotosm.s3.amazonaws.com/6066cd43d8a0ef00061b9506/0/6066cd43d8a0ef00061b9507.tif \
     --save-geojson \
     --save-crop \
     --nosave
