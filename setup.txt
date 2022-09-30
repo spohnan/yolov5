@@ -1,7 +1,6 @@
 #!/bin/bash
-sudo -i
-mkdir -p runs 
-mkfs.xfs /dev/nvme1n1
-mount -t xfs /dev/nvme1n1 $(pwd)/runs
+sudo mkdir -p /home/ec2-user/yolov5/runs
+sudo mkfs.xfs /dev/nvme1n1
+sudo mount -t xfs /dev/nvme1n1 /home/ec2-user/yolov5/runs
 curl -O https://d1e0wfdqraggj5.cloudfront.net/cars.pt
-chown ec2-user.ec2-user runs cars.pt
+sudo chown ec2-user.ec2-user runs cars.pt
