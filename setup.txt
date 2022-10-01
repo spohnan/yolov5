@@ -16,3 +16,13 @@ python detect.py \
     --save-geojson \
     --save-crop \
     --nosave
+
+# Run from master branch
+
+python detect.py \
+    --weights cars.pt \
+    --classes 3 4 5 8 9 \
+    --conf-thres 0.40 \
+    --source https://www.youtube.com/watch?v=5_XSYlAfJZM \
+    --nosave
+
