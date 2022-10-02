@@ -196,13 +196,12 @@ def run(
                         annotator.box_label(xyxy, label, color=colors(c, True))
 
                     if save_crop:
-                        crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
                     if save_geojson or save_kml: # Translate pixel space to geocoords
                         xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
                         xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
                         detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
-                        # detects.append({'cl': c,'co': get_color(crop), 'geometry': detect_bbox})
                         detects.append({'cl': c, 'geometry': detect_bbox})
 
             # Stream results
@@ -252,40 +251,6 @@ def run(
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
-
-COLORS = (
-    (255,255,255,'white'),
-    (255,255,0,'yellow'),
-    (255,165,0,'orange'),
-    (255,0,0,'red'),
-    (0,128,0,'green'),
-    (0,0,255,'blue'),
-    (128,128,128,'gray'),
-    (165,42,42,'brown'),
-    (128,0,128,'purple'),
-    (0,0,0,'black'),
-)
-
-# Just grabbing a few points and returning the most common
-def get_color(img):
-    colors = {}
-    height = img.shape[0]
-    width= img.shape[1]
-    for x in range(0, 8):
-        c = img[int((height / 3) +  (x * 3)), int((width / 3) + (x * 3))]
-        key = closest_color(c[2], c[1], c[0])
-        colors[key] = colors.get(key, 0) + 1
-    
-    print(f"returning: {max(colors, key=colors.get)}")
-    return max(colors, key=colors.get)
-
-def closest_color(r,g,b):
-    color_diffs = []
-    for color in COLORS:
-        cr, cg, cb, cn = color
-        color_diff = sqrt(abs(r - cr)**2 + abs(g - cg)**2 + abs(b - cb)**2)
-        color_diffs.append((color_diff, color))
-    return min(color_diffs)[1][3]
 
 def pixel_to_lat_lon(img, x, y):
     px, py = rio.transform.xy(img.transform, int(x), int(y))
