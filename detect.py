@@ -41,7 +41,6 @@ from itertools import product
 import rasterio as rio
 from rasterio import windows
 from math import sqrt
-from random import sample
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -103,8 +102,10 @@ def run(
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     if is_url:
-        # torch.hub.download_url_to_file(source, os.path.join(save_dir, Path(source).name))
-        source = chip_image(source, save_dir)
+        if not is_file:
+            torch.hub.download_url_to_file(source, os.path.join(save_dir, Path(source).name))
+        else:
+            source = chip_image(source, save_dir)
 
     # Load model
     device = select_device(device)
@@ -177,7 +178,8 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                rimg = rio.open(path)
+                if save_geojson or save_kml:
+                    rimg = rio.open(path)
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
@@ -196,7 +198,7 @@ def run(
                     if save_crop:
                         crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
-                    if save_geojson or save_kml : # Translate pixel space to geocoords
+                    if save_geojson or save_kml: # Translate pixel space to geocoords
                         xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
                         xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
                         detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])

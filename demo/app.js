@@ -22,6 +22,12 @@ const datasets = {
         maxZoom: 21,
         tiles: ['https://tiles.openaerialmap.org/60c44318338cc80005cfdd06/0/60c44318338cc80005cfdd07/{z}/{x}/{y}']
     },
+    denver: {
+        center: [-104.964, 39.758],
+        zoom: 15,
+        maxZoom: 21,
+        tiles: ['https://tiles.openaerialmap.org/5bc9fe17f104840007c66503/0/5bc9fe17f104840007c66513/{z}/{x}/{y}']
+    },
     winchelsea: {
         center: [0.708, 50.924],
         zoom: 17,
