@@ -72,6 +72,7 @@ def run(
         save_conf=False,  # save confidences in --save-txt labels
         save_crop=False,  # save cropped prediction boxes
         save_geojson=False, # save prediction boxes as geojson
+        save_kml=False, # save prediction boxes as kml
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
@@ -193,7 +194,7 @@ def run(
                     if save_crop:
                         crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
-                    if save_geojson: # Write to GeoJSON file
+                    if save_geojson or save_kml : # Translate pixel space to geocoords
                         xMin, yMin = pixel_to_lat_lon(rimg, xyxy[1], xyxy[0])
                         xMax, yMax = pixel_to_lat_lon(rimg, xyxy[3], xyxy[2])
                         detect_bbox = Polygon.from_bounds(xMin[0], yMin[0], xMax[0], yMax[0])
@@ -233,8 +234,11 @@ def run(
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
     if save_geojson:
-        with open(f'{save_dir}/detects.geojson', 'w') as f:
-            f.write(gpd.GeoDataFrame(detects).to_json())
+        gpd.GeoDataFrame(detects).to_file(f'{save_dir}/detects.geojson', driver='GeoJSON')
+
+    if save_kml:
+        gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+        gpd.GeoDataFrame(detects).to_file(f'{save_dir}/detects.kml', driver='KML')
 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
