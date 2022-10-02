@@ -40,7 +40,6 @@ import geopandas as gpd
 from itertools import product
 import rasterio as rio
 from rasterio import windows
-from math import sqrt
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
